@@ -1,0 +1,37 @@
+name: Build APKs
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+
+      - name: Find and build with Gradle
+        run: |
+          # Find where gradlew is located in the repository and run it
+          GRADLE_WRAPPER=$(find . -name "gradlew" -type f)
+          if [ -z "$GRADLE_WRAPPER" ]; then
+            echo "Error: gradlew not found in repository!"
+            exit 1
+          fi
+          PROJECT_DIR=$(dirname "$GRADLE_WRAPPER")
+          echo "Found gradlew in $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          chmod +x gradlew
+          ./gradlew assembleDebug
+        
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: rokid-maps-apks
+          path: '**/build/outputs/apk/debug/*.apk'
